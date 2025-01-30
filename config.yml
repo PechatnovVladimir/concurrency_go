@@ -1,0 +1,10 @@
+engine:
+  type: "in_memory"
+network:
+  address: "127.0.0.1:3323"
+  max_connections: 25
+  max_message_size: 4096
+  idle_timeout: 5m
+logging:
+  level: "debug"
+  output: "kv-db-output.log"
