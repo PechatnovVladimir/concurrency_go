@@ -6,5 +6,10 @@ network:
   max_message_size: 4096
   idle_timeout: 5m
 logging:
-  level: "debug"
+  level: "info"
   output: "kv-db-output.log"
+wal:
+  flushing_batch_size: 100
+  flushing_batch_timeout: 5ms
+  max_segment_size: 1048576
+  data_directory: "/home/pvv/wal"

@@ -10,6 +10,7 @@ import (
 
 type Config struct {
 	Engine  *EngineConfig  `yaml:"engine"`
+	WAL     *WALConfig     `yaml:"wal"`
 	Network *NetworkConfig `yaml:"network"`
 	Logging *LoggingConfig `yaml:"logging"`
 }
@@ -28,6 +29,13 @@ type NetworkConfig struct {
 type LoggingConfig struct {
 	Level  string `yaml:"level"`
 	Output string `yaml:"output"`
+}
+
+type WALConfig struct {
+	FlushingBatchSize    int           `yaml:"flushing_batch_size"`
+	FlushingBatchTimeout time.Duration `yaml:"flushing_batch_timeout"`
+	MaxSegmentSize       int64         `yaml:"max_segment_size"`
+	DataDirectory        string        `yaml:"data_directory"`
 }
 
 func Load(reader io.Reader) (*Config, error) {

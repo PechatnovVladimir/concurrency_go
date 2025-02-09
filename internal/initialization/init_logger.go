@@ -21,6 +21,17 @@ func CreateLogger(cfg *config.LoggingConfig) (*zerolog.Logger, error) {
 	multiLogger := zerolog.MultiLevelWriter(consoleWriter, file)
 
 	logger := zerolog.New(multiLogger).With().Timestamp().Logger()
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	switch cfg.Level {
+	case "info", "INFO":
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	case "warn", "WARN":
+		zerolog.SetGlobalLevel(zerolog.WarnLevel)
+	case "error", "ERROR":
+		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	case "debug", "DEBUG":
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	default:
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
 	return &logger, nil
 }

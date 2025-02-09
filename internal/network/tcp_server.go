@@ -1,6 +1,7 @@
 package network
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/rs/zerolog"
@@ -11,7 +12,7 @@ import (
 	"time"
 )
 
-type TCPHandler = func([]byte) []byte
+type TCPHandler = func(context.Context, []byte) []byte
 
 type TCPServer struct {
 	listener  net.Listener
@@ -53,7 +54,7 @@ func NewTCPServer(address string, idleTimeout time.Duration, bufferSize int, max
 	return server, nil
 }
 
-func (s *TCPServer) handleConnection(connection net.Conn, handler TCPHandler) {
+func (s *TCPServer) handleConnection(ctx context.Context, connection net.Conn, handler TCPHandler) {
 	defer func() {
 		err := connection.Close()
 
@@ -88,7 +89,7 @@ func (s *TCPServer) handleConnection(connection net.Conn, handler TCPHandler) {
 			}
 		}
 
-		response := handler(request[:count])
+		response := handler(ctx, request[:count])
 		if _, err := connection.Write(response); err != nil {
 			s.logger.Warn().Err(err).Str("address", connection.RemoteAddr().String()).Msg("failed to write data")
 			break
@@ -96,33 +97,38 @@ func (s *TCPServer) handleConnection(connection net.Conn, handler TCPHandler) {
 	}
 }
 
-func (s *TCPServer) Start(handler TCPHandler) {
+func (s *TCPServer) HandleQueries(ctx context.Context, handler TCPHandler) {
 	var wg sync.WaitGroup
 
 	s.logger.Info().Str("adrress", s.listener.Addr().String()).Msg("start server")
 
-	for {
-		conn, err := s.listener.Accept()
-		if err != nil {
-			if errors.Is(err, net.ErrClosed) {
-				return
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		for {
+			conn, err := s.listener.Accept()
+			if err != nil {
+				if errors.Is(err, net.ErrClosed) {
+					return
+				}
+
+				s.logger.Error().Err(err).Msg("failed to accept")
+				continue
 			}
 
-			s.logger.Error().Err(err).Msg("failed to accept")
-			continue
+			s.semaphore.Acquire()
+
+			go func(conn net.Conn) {
+				defer s.semaphore.Release()
+				s.handleConnection(ctx, conn, handler)
+			}(conn)
 		}
+	}()
 
-		s.semaphore.Acquire()
-		wg.Add(1)
+	<-ctx.Done()
+	s.listener.Close()
 
-		go func(conn net.Conn) {
-			defer func() {
-				conn.Close()
-				s.semaphore.Release()
-				wg.Done()
-			}()
-			s.handleConnection(conn, handler)
-		}(conn)
-	}
 	wg.Wait()
 }
