@@ -22,31 +22,8 @@ type LogFile struct {
 	index    int
 }
 
-func NewLogFile(dir string, maxSize int64) (*LogFile, error) {
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-		return nil, err
-	}
-
-	lf := &LogFile{
-		dir:     dir,
-		maxSize: maxSize,
-	}
-
-	lastIndex, err := lf.findLastIndex()
-	if err != nil {
-		return nil, err
-	}
-	lf.index = lastIndex
-
-	if err := lf.openLastFile(); err != nil {
-		return nil, err
-	}
-
-	return lf, nil
-}
-
-func (lf *LogFile) findLastIndex() (int, error) {
-	files, err := os.ReadDir(lf.dir)
+func findLastIndex(dir string) (int, error) {
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return 0, err
 	}
@@ -74,6 +51,29 @@ func (lf *LogFile) findLastIndex() (int, error) {
 
 	sort.Ints(indices)
 	return indices[len(indices)-1], nil
+}
+
+func NewLogFile(dir string, maxSize int64) (*LogFile, error) {
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return nil, err
+	}
+
+	lf := &LogFile{
+		dir:     dir,
+		maxSize: maxSize,
+	}
+
+	lastIndex, err := findLastIndex(lf.dir)
+	if err != nil {
+		return nil, err
+	}
+	lf.index = lastIndex
+
+	if err := lf.openLastFile(); err != nil {
+		return nil, err
+	}
+
+	return lf, nil
 }
 
 func (lf *LogFile) openLastFile() error {
@@ -134,6 +134,10 @@ func (lf *LogFile) Write(data []byte) error {
 
 	n, err := lf.file.Write(data)
 	if err != nil {
+		return err
+	}
+
+	if err = lf.file.Sync(); err != nil {
 		return err
 	}
 

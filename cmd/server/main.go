@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"github.com/joho/godotenv"
 	"kvdatabase/internal/config"
 	"kvdatabase/internal/initialization"
@@ -43,7 +42,6 @@ func main() {
 	ctx := context.Background()
 	err = i.StartApp(ctx)
 	if err != nil {
-		fmt.Println("11")
 		log.Fatal(err)
 	}
 

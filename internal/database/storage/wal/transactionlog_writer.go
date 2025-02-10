@@ -36,6 +36,7 @@ func (w *TransactionLogWriter) Write(requests []WriteRequest) {
 		log := requests[idx].TransactionLog()
 		if err := log.Encode(&buffer); err != nil {
 			w.logger.Warn().Err(err).Msg("failed to encode logs data")
+			w.acknowledgeWrite(requests, err)
 			return
 		}
 	}

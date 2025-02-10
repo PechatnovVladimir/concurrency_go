@@ -12,6 +12,7 @@ import (
 )
 
 func main() {
+	//это не в рамках ДЗ, для себя...
 	consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
 	logger := zerolog.New(consoleWriter).With().Timestamp().Logger()
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
@@ -26,6 +27,8 @@ func main() {
 		logger.Fatal().Err(err).Msg("failed to connect with server")
 	}
 
+	//заливаем тысячу ключей, чтобы руками не вбивать с клиента, посмотреть как создаются файлы wal
+	//можно не обращать на это внимание, это для себя
 	for i := 1; i < 10000; i++ {
 		request := fmt.Sprintf("SET %d %d", i, i)
 
@@ -37,6 +40,8 @@ func main() {
 		}
 	}
 
+	//удаляем каждый 50-й ключ
+	//можно не обращать на это внимание, это для себя
 	for i := 50; i < 10000; i += 50 {
 		request := fmt.Sprintf("DEL %d", i)
 

@@ -19,7 +19,7 @@ func NewTransactionLogReader(dir string) (*TransactionLogReader, error) {
 	}, nil
 }
 
-func (r *TransactionLogReader) Read() ([]TransactionLog, error) {
+func (r *TransactionLogReader) ReadWALFiles() ([]TransactionLog, error) {
 	var transactionLogs []TransactionLog
 
 	fileNames, err := r.ListWALFiles()

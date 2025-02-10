@@ -7,8 +7,8 @@ import (
 )
 
 type Engine struct {
-	cache  *Cache
-	logger *zerolog.Logger
+	hashTable *HashTable
+	logger    *zerolog.Logger
 }
 
 func NewEngine(logger *zerolog.Logger) (*Engine, error) {
@@ -16,28 +16,28 @@ func NewEngine(logger *zerolog.Logger) (*Engine, error) {
 		return nil, errors.New("logger is invalid")
 	}
 
-	c := NewCache()
+	c := NewHashTable()
 	return &Engine{
-		cache:  c,
-		logger: logger,
+		hashTable: c,
+		logger:    logger,
 	}, nil
 }
 
 func (e *Engine) Set(ctx context.Context, key string, value string) {
-	e.cache.Set(key, value)
+	e.hashTable.Set(key, value)
 
 	e.logger.Debug().Str("key", key).Str("value", value).Msg("engine set query")
 }
 
 func (e *Engine) Get(ctx context.Context, key string) (string, bool) {
-	value, ok := e.cache.Get(key)
+	value, ok := e.hashTable.Get(key)
 
 	e.logger.Debug().Str("key", key).Str("value", value).Msg("engine get query")
 	return value, ok
 }
 
 func (e *Engine) Del(ctx context.Context, key string) {
-	e.cache.Del(key)
+	e.hashTable.Del(key)
 
 	e.logger.Debug().Str("key", key).Msg("engine del query")
 }

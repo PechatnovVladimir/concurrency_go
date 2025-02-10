@@ -4,25 +4,25 @@ import (
 	"sync"
 )
 
-type Cache struct {
+type HashTable struct {
 	mx   sync.RWMutex
 	data map[string]string
 }
 
-func NewCache() *Cache {
+func NewHashTable() *HashTable {
 
-	return &Cache{
+	return &HashTable{
 		data: make(map[string]string),
 	}
 }
 
-func (c *Cache) Set(key string, value string) {
+func (c *HashTable) Set(key string, value string) {
 	c.mx.Lock()
 	defer c.mx.Unlock()
 	c.data[key] = value
 }
 
-func (c *Cache) Get(key string) (string, bool) {
+func (c *HashTable) Get(key string) (string, bool) {
 	c.mx.RLock()
 	defer c.mx.RUnlock()
 	value, ok := c.data[key]
@@ -30,7 +30,7 @@ func (c *Cache) Get(key string) (string, bool) {
 	return value, ok
 }
 
-func (c *Cache) Del(key string) {
+func (c *HashTable) Del(key string) {
 	c.mx.Lock()
 	defer c.mx.Unlock()
 	delete(c.data, key)

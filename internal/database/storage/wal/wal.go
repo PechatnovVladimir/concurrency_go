@@ -15,7 +15,7 @@ type transactionLogWriter interface {
 }
 
 type transactionLogReader interface {
-	Read() ([]TransactionLog, error)
+	ReadWALFiles() ([]TransactionLog, error)
 }
 
 type WAL struct {
@@ -65,10 +65,8 @@ func (w *WAL) Start(ctx context.Context) {
 				return
 			case batch := <-w.batches:
 				w.transactionLogWriter.Write(batch)
-				//fmt.Println("flush by size", w.maxBatchSize, len(w.batch))
 				ticker.Reset(w.flushTimeout)
 			case <-ticker.C:
-				//fmt.Println("flush by ticker", w.maxBatchSize, len(w.batch))
 				w.flushBatch()
 			}
 		}
@@ -76,7 +74,7 @@ func (w *WAL) Start(ctx context.Context) {
 }
 
 func (w *WAL) Recover() ([]TransactionLog, error) {
-	return w.transactionLogReader.Read()
+	return w.transactionLogReader.ReadWALFiles()
 }
 
 func (w *WAL) Set(ctx context.Context, key string, value string) concurrency.Future {
