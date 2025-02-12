@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"errors"
 	"flag"
 	"fmt"
@@ -13,7 +12,7 @@ import (
 )
 
 func main() {
-
+	//это не в рамках ДЗ, для себя...
 	consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
 	logger := zerolog.New(consoleWriter).With().Timestamp().Logger()
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
@@ -23,28 +22,34 @@ func main() {
 	maxMessageSize := flag.Int("max_message_size", 4096, "Max message size for connection")
 	flag.Parse()
 
-	reader := bufio.NewReader(os.Stdin)
 	client, err := network.NewTCPClient(*address, *idleTimeout, *maxMessageSize)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to connect with server")
 	}
 
-	for {
-		fmt.Print("[kv-db] > ")
-		request, err := reader.ReadString('\n')
-		if errors.Is(err, syscall.EPIPE) {
-			logger.Fatal().Err(err).Msg("connection was closed")
-		} else if err != nil {
-			logger.Fatal().Err(err).Msg("failed to read query")
-		}
+	//заливаем тысячу ключей, чтобы руками не вбивать с клиента, посмотреть как создаются файлы wal
+	//можно не обращать на это внимание, это для себя
+	for i := 1; i < 10000; i++ {
+		request := fmt.Sprintf("SET %d %d", i, i)
 
-		response, err := client.Send([]byte(request))
+		_, err := client.Send([]byte(request))
 		if errors.Is(err, syscall.EPIPE) {
 			logger.Fatal().Err(err).Msg("connection was closed")
 		} else if err != nil {
 			logger.Error().Err(err).Msg("failed to send query")
 		}
+	}
 
-		fmt.Println(string(response))
+	//удаляем каждый 50-й ключ
+	//можно не обращать на это внимание, это для себя
+	for i := 50; i < 10000; i += 50 {
+		request := fmt.Sprintf("DEL %d", i)
+
+		_, err := client.Send([]byte(request))
+		if errors.Is(err, syscall.EPIPE) {
+			logger.Fatal().Err(err).Msg("connection was closed")
+		} else if err != nil {
+			logger.Error().Err(err).Msg("failed to send query")
+		}
 	}
 }

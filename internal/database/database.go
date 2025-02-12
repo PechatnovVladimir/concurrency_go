@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/rs/zerolog"
@@ -15,9 +16,9 @@ var (
 )
 
 type storageLayer interface {
-	Set(key string, value string) error
-	Get(key string) (string, error)
-	Del(key string) error
+	Set(ctx context.Context, key string, value string) error
+	Get(ctx context.Context, key string) (string, error)
+	Del(ctx context.Context, key string) error
 }
 
 type computeLayer interface {
@@ -50,7 +51,7 @@ func NewDB(computeLayer computeLayer, storageLayer storageLayer, logger *zerolog
 	}, nil
 }
 
-func (d *DB) HandleQuery(queryStr string) string {
+func (d *DB) HandleQuery(ctx context.Context, queryStr string) string {
 	d.logger.Debug().Str("query", queryStr).Msg("handling query")
 	query, err := d.computeLayer.Parse(queryStr)
 	if err != nil {
@@ -59,11 +60,11 @@ func (d *DB) HandleQuery(queryStr string) string {
 
 	switch query.CommandID() {
 	case compute.SetCommandID:
-		return d.handleSetQuery(query)
+		return d.handleSetQuery(ctx, query)
 	case compute.GetCommandID:
-		return d.handleGetQuery(query)
+		return d.handleGetQuery(ctx, query)
 	case compute.DelCommandID:
-		return d.handleDelQuery(query)
+		return d.handleDelQuery(ctx, query)
 	default:
 		d.logger.Error().Int("command_id", query.CommandID()).Msg("compute layer is incorrect")
 	}
@@ -71,18 +72,18 @@ func (d *DB) HandleQuery(queryStr string) string {
 	return "[error] internal error"
 }
 
-func (d *DB) handleSetQuery(query compute.Query) string {
+func (d *DB) handleSetQuery(ctx context.Context, query compute.Query) string {
 	arguments := query.Arguments()
-	if err := d.storageLayer.Set(arguments[0], arguments[1]); err != nil {
+	if err := d.storageLayer.Set(ctx, arguments[0], arguments[1]); err != nil {
 		return fmt.Sprintf("[error] %s", err.Error())
 	}
 
 	return "[SET OK]"
 }
 
-func (d *DB) handleGetQuery(query compute.Query) string {
+func (d *DB) handleGetQuery(ctx context.Context, query compute.Query) string {
 	arguments := query.Arguments()
-	value, err := d.storageLayer.Get(arguments[0])
+	value, err := d.storageLayer.Get(ctx, arguments[0])
 	if errors.Is(err, storage.ErrNotFound) {
 		return "[not found]"
 	} else if err != nil {
@@ -92,9 +93,9 @@ func (d *DB) handleGetQuery(query compute.Query) string {
 	return fmt.Sprintf("[GET OK] %s", value)
 }
 
-func (d *DB) handleDelQuery(query compute.Query) string {
+func (d *DB) handleDelQuery(ctx context.Context, query compute.Query) string {
 	arguments := query.Arguments()
-	if err := d.storageLayer.Del(arguments[0]); err != nil {
+	if err := d.storageLayer.Del(ctx, arguments[0]); err != nil {
 		return fmt.Sprintf("[error] %s", err.Error())
 	}
 

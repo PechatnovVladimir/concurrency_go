@@ -1,15 +1,14 @@
 package engine
 
 import (
+	"context"
 	"errors"
 	"github.com/rs/zerolog"
-	"sync"
 )
 
 type Engine struct {
-	mx     sync.Mutex
-	data   map[string]string
-	logger *zerolog.Logger
+	hashTable *HashTable
+	logger    *zerolog.Logger
 }
 
 func NewEngine(logger *zerolog.Logger) (*Engine, error) {
@@ -17,33 +16,28 @@ func NewEngine(logger *zerolog.Logger) (*Engine, error) {
 		return nil, errors.New("logger is invalid")
 	}
 
+	c := NewHashTable()
 	return &Engine{
-		data:   make(map[string]string),
-		logger: logger,
+		hashTable: c,
+		logger:    logger,
 	}, nil
 }
 
-func (e *Engine) Set(key string, value string) {
-	e.mx.Lock()
-	defer e.mx.Unlock()
-	e.data[key] = value
+func (e *Engine) Set(ctx context.Context, key string, value string) {
+	e.hashTable.Set(key, value)
 
 	e.logger.Debug().Str("key", key).Str("value", value).Msg("engine set query")
 }
 
-func (e *Engine) Get(key string) (string, bool) {
-	e.mx.Lock()
-	defer e.mx.Unlock()
-	value, ok := e.data[key]
+func (e *Engine) Get(ctx context.Context, key string) (string, bool) {
+	value, ok := e.hashTable.Get(key)
 
 	e.logger.Debug().Str("key", key).Str("value", value).Msg("engine get query")
 	return value, ok
 }
 
-func (e *Engine) Del(key string) {
-	e.mx.Lock()
-	defer e.mx.Unlock()
-	delete(e.data, key)
+func (e *Engine) Del(ctx context.Context, key string) {
+	e.hashTable.Del(key)
 
 	e.logger.Debug().Str("key", key).Msg("engine del query")
 }
